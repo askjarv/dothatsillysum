@@ -1,0 +1,676 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Time Calculator</title>
+    <style>
+        :root {
+            --primary-color: #4CAF50;
+            --background-color: #1a1a2e;
+            --card-color: rgba(255, 255, 255, 0.1);
+            --text-color: #fff;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background: var(--background-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Animated background bubbles */
+        .bubble {
+            position: fixed;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            animation: float 8s infinite;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0% { transform: translateY(0) translateX(0); }
+            50% { transform: translateY(-100px) translateX(20px); }
+            100% { transform: translateY(0) translateX(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            background: var(--card-color);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .form-group:hover {
+            transform: translateY(-2px);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #a8e6cf;
+        }
+
+        input, select {
+            width: 90%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-color);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            background: rgba(255, 255, 255, 0.2);
+            box-shadow: 0 0 0 2px var(--primary-color);
+            width: 90%;
+        }
+
+        button {
+            padding: 12px 24px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            width: 90%;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            background: var(--card-color);
+            backdrop-filter: blur(10px);
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: var(--background-color);
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 500px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .close {
+            float: right;
+            cursor: pointer;
+            font-size: 24px;
+            color: var(--text-color);
+            transition: color 0.3s ease;
+        }
+
+        .close:hover {
+            color: var(--primary-color);
+        }
+
+        h1 {
+            text-align: center;
+            color: #a8e6cf;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        /* Add these new styles */
+        select option {
+            background: var(--background-color);
+            color: var(--text-color);
+        }
+
+        .speech-status {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: var(--primary-color);
+            border-radius: 20px;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .mic-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+
+        .mic-button i {
+            font-size: 24px;
+            color: white;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body>
+    <h1>Task Time Calculator</h1>
+    
+    <div class="form-group">
+        <label for="currentTime">Current Time:</label>
+        <input type="time" id="currentTime" required>
+    </div>
+
+    <div class="form-group saved-duration" id="savedDurationGroup">
+        <label for="savedDurations">Saved Durations:</label>
+        <select id="savedDurations" onchange="handleSavedDurationChange()">
+            <option value="">Select a saved duration...</option>
+        </select>
+    </div>
+
+    <div class="form-group">
+        <label for="duration">Duration (hours):</label>
+        <input type="number" id="duration" min="0.1" step="0.1" required>
+        <button onclick="openSettingsModal()" style="margin-left: 10px">Save Duration</button>
+    </div>
+
+    <div class="form-group">
+        <label for="completedBy">Completed By (hour):</label>
+        <select id="completedBy" required>
+            <!-- Options will be populated by JavaScript -->
+        </select>
+    </div>
+
+    <button onclick="calculateDelay()">Calculate</button>
+
+    <div id="result"></div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeSettingsModal()">&times;</span>
+            <h2>Save Duration</h2>
+            <div class="form-group">
+                <label for="durationName">Name:</label>
+                <input type="text" id="durationName" required>
+            </div>
+            <button onclick="saveDuration()">Save</button>
+        </div>
+    </div>
+
+    <div class="speech-status" id="speechStatus">Listening...</div>
+    <div class="mic-button" id="micButton" onclick="toggleVoiceMode()">
+        <i class="fas fa-microphone"></i>
+    </div>
+
+    <script>
+        // Speech-related variables
+        let speechSynthesis = window.speechSynthesis;
+        let recognition = null;
+        let isVoiceModeActive = false;
+        let currentQuestion = 0;
+
+        // Speech-related functions
+        function initializeSpeechRecognition() {
+            if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+                console.log('Speech recognition is supported');
+                recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+                recognition.continuous = false;
+                recognition.interimResults = false;
+                recognition.lang = 'en-US';
+                
+                recognition.onstart = function() {
+                    console.log('Speech recognition started');
+                };
+                
+                recognition.onresult = function(event) {
+                    console.log('Full speech recognition event:', event);
+                    if (event.results.length > 0) {
+                        const result = event.results[0][0].transcript;
+                        console.log('Speech recognition captured:', result);
+                        console.log('Confidence:', event.results[0][0].confidence);
+                        handleVoiceResponse(result);
+                    } else {
+                        console.log('No speech results received');
+                    }
+                };
+                
+                recognition.onend = function() {
+                    console.log('Speech recognition ended');
+                    document.getElementById('speechStatus').style.display = 'none';
+                    if (isVoiceModeActive && currentQuestion < 2) {
+                        console.log('Restarting speech recognition');
+                        recognition.start();
+                    }
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Speech recognition error:', event.error);
+                    document.getElementById('speechStatus').style.display = 'none';
+                    
+                    switch(event.error) {
+                        case 'no-speech':
+                            console.log('No speech was detected');
+                            speak("I didn't hear anything. Please try again.", startVoiceInteraction);
+                            break;
+                        case 'not-allowed':
+                            console.log('Microphone access denied');
+                            speak("Please enable microphone access to use voice features.");
+                            break;
+                        default:
+                            console.log('Error occurred in recognition:', event.error);
+                            speak("There was an error. Please try again.", startVoiceInteraction);
+                    }
+                };
+            } else {
+                console.warn('Speech recognition is not supported in this browser');
+                alert('Speech recognition is not supported in this browser');
+            }
+        }
+
+        function speak(text, callback) {
+            // Cancel any ongoing speech
+            speechSynthesis.cancel();
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Get available voices
+            const voices = speechSynthesis.getVoices();
+            
+            // Try to find a good English voice
+            const preferredVoice = voices.find(voice => 
+                (voice.name.includes('Google') || voice.name.includes('Premium') || voice.name.includes('Enhanced')) && 
+                voice.lang.startsWith('en')
+            ) || voices.find(voice => voice.lang.startsWith('en')) || voices[0];
+            
+            // Configure speech parameters
+            utterance.voice = preferredVoice;
+            utterance.rate = 1.0;  // Speed of speech (0.1 to 10)
+            utterance.pitch = 1.0; // Pitch of voice (0 to 2)
+            utterance.volume = 1.0; // Volume (0 to 1)
+            
+            // Log available voices and selected voice
+            console.log('Available voices:', voices);
+            console.log('Selected voice:', preferredVoice);
+
+            utterance.onend = callback || function() {};
+            speechSynthesis.speak(utterance);
+        }
+
+        // Add this function to initialize voices
+        function initializeVoices() {
+            return new Promise((resolve) => {
+                if (speechSynthesis.getVoices().length) {
+                    resolve();
+                } else {
+                    speechSynthesis.onvoiceschanged = () => resolve();
+                }
+            });
+        }
+
+        function toggleVoiceMode() {
+            isVoiceModeActive = !isVoiceModeActive;
+            const micButton = document.getElementById('micButton');
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+            micButton.style.background = isVoiceModeActive ? '#ff4444' : primaryColor;
+            
+            console.log('Voice mode:', isVoiceModeActive ? 'activated' : 'deactivated');
+            
+            if (isVoiceModeActive) {
+                currentQuestion = 0;
+                startVoiceInteraction();
+            } else {
+                if (recognition) {
+                    recognition.stop();
+                }
+                document.getElementById('speechStatus').style.display = 'none';
+            }
+        }
+
+        function startVoiceInteraction() {
+            const questions = [
+                "What is the duration of your task in hours?",
+                "By what hour should the task be completed? Please specify in 24-hour format."
+            ];
+            
+            if (currentQuestion < questions.length) {
+                console.log('Starting voice interaction for question:', currentQuestion);
+                speak(questions[currentQuestion], function() {
+                    console.log('Starting speech recognition after question');
+                    document.getElementById('speechStatus').style.display = 'block';
+                    try {
+                        recognition.start();
+                    } catch (e) {
+                        console.error('Error starting recognition:', e);
+                        recognition.stop();
+                        setTimeout(() => recognition.start(), 100);
+                    }
+                });
+            }
+        }
+
+        // Add this function to convert words to numbers
+        function wordToNumber(word) {
+            const numbers = {
+                'zero': 0, 'one': 1, 'two': 2, 'three': 3, 'four': 4,
+                'five': 5, 'six': 6, 'seven': 7, 'eight': 8, 'nine': 9,
+                'ten': 10, 'eleven': 11, 'twelve': 12, 'thirteen': 13,
+                'fourteen': 14, 'fifteen': 15, 'sixteen': 16, 'seventeen': 17,
+                'eighteen': 18, 'nineteen': 19, 'twenty': 20,
+                'thirty': 30, 'forty': 40, 'fifty': 50
+            };
+            
+            // Convert to lowercase and remove punctuation
+            word = word.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "");
+            
+            // Check if it's a simple number word
+            if (numbers.hasOwnProperty(word)) {
+                return numbers[word];
+            }
+            
+            // Handle compound numbers (e.g., "twenty five")
+            const parts = word.split(' ');
+            if (parts.length > 1) {
+                let total = 0;
+                for (const part of parts) {
+                    if (numbers.hasOwnProperty(part)) {
+                        total += numbers[part];
+                    }
+                }
+                if (total > 0) return total;
+            }
+            
+            // If not found, return the original number if it exists
+            return parseFloat(word.replace(/[^0-9.]/g, ''));
+        }
+
+        // Update the handleVoiceResponse function
+        function handleVoiceResponse(result) {
+            const durationInput = document.getElementById('duration');
+            const completedBySelect = document.getElementById('completedBy');
+            const savedDurations = JSON.parse(localStorage.getItem('savedDurations') || '{}');
+            
+            console.log('Speech recognition captured:', result);
+            
+            switch(currentQuestion) {
+                case 0: // Duration
+                    // First check if the spoken text matches a saved duration name
+                    const spokenText = result.toLowerCase().trim();
+                    const savedDurationMatch = Object.entries(savedDurations).find(([name, _]) => 
+                        name.toLowerCase() === spokenText
+                    );
+
+                    if (savedDurationMatch) {
+                        console.log('Matched saved duration:', savedDurationMatch);
+                        durationInput.value = savedDurationMatch[1];
+                        currentQuestion++;
+                        setTimeout(startVoiceInteraction, 1000);
+                    } else {
+                        // If no saved duration matches, try to parse as a number
+                        const duration = wordToNumber(result);
+                        console.log('Parsed duration:', duration);
+                        if (!isNaN(duration) && duration > 0) {
+                            durationInput.value = duration;
+                            currentQuestion++;
+                            setTimeout(startVoiceInteraction, 1000);
+                        } else {
+                            console.log('Failed to parse duration from:', result);
+                            // Create a list of saved duration names for the prompt
+                            const savedNames = Object.keys(savedDurations);
+                            const promptText = savedNames.length > 0 
+                                ? `I didn't catch that duration. Please say a number of hours or one of your saved durations: ${savedNames.join(', ')}.`
+                                : "I didn't catch that duration. Please say a number of hours.";
+                            speak(promptText, startVoiceInteraction);
+                        }
+                    }
+                    break;
+                    
+                case 1: // Completion time
+                    const hourWord = result.toLowerCase();
+                    let hour = wordToNumber(hourWord);
+                    
+                    // Handle special cases like "noon" and "midnight"
+                    if (hourWord.includes('noon')) hour = 12;
+                    if (hourWord.includes('midnight')) hour = 0;
+                    
+                    console.log('Parsed hour:', hour);
+                    if (!isNaN(hour) && hour >= 0 && hour <= 23) {
+                        // Find the closest matching option
+                        for (let i = 0; i < completedBySelect.options.length; i++) {
+                            if (completedBySelect.options[i].text.startsWith(hour.toString().padStart(2, '0'))) {
+                                completedBySelect.selectedIndex = i;
+                                break;
+                            }
+                        }
+                        calculateDelay();
+                        currentQuestion++;
+                        // Read out the result and then turn off voice mode
+                        setTimeout(() => {
+                            const resultText = document.getElementById('result').innerText;
+                            speak(resultText, () => {
+                                // Turn off voice mode after speaking the result
+                                isVoiceModeActive = false;
+                                const micButton = document.getElementById('micButton');
+                                const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-color');
+                                micButton.style.background = primaryColor;
+                                if (recognition) {
+                                    recognition.stop();
+                                }
+                                document.getElementById('speechStatus').style.display = 'none';
+                            });
+                        }, 1000);
+                    } else {
+                        console.log('Failed to parse hour from:', result);
+                        speak("I didn't catch that time. Please specify an hour between 0 and 23.", startVoiceInteraction);
+                    }
+                    break;
+            }
+        }
+
+        // Other existing functions
+        function loadSavedDurations() {
+            const savedDurations = JSON.parse(localStorage.getItem('savedDurations') || '{}');
+            const select = document.getElementById('savedDurations');
+            const savedDurationGroup = document.getElementById('savedDurationGroup');
+            
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add saved durations to select
+            for (const [name, duration] of Object.entries(savedDurations)) {
+                const option = document.createElement('option');
+                option.value = duration;
+                option.text = `${name} (${duration} hours)`;
+                select.appendChild(option);
+            }
+            
+            // Show/hide the saved durations dropdown
+            savedDurationGroup.style.display = select.options.length > 1 ? 'block' : 'none';
+        }
+
+        function handleSavedDurationChange() {
+            const select = document.getElementById('savedDurations');
+            const durationInput = document.getElementById('duration');
+            if (select.value) {
+                durationInput.value = select.value;
+            }
+        }
+
+        function openSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'block';
+            document.getElementById('durationName').value = '';
+        }
+
+        function closeSettingsModal() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+
+        function saveDuration() {
+            const name = document.getElementById('durationName').value.trim();
+            const duration = document.getElementById('duration').value;
+            
+            if (!name || !duration) {
+                alert('Please enter both a name and duration');
+                return;
+            }
+            
+            const savedDurations = JSON.parse(localStorage.getItem('savedDurations') || '{}');
+            savedDurations[name] = duration;
+            localStorage.setItem('savedDurations', JSON.stringify(savedDurations));
+            
+            closeSettingsModal();
+            loadSavedDurations();
+        }
+
+        function calculateDelay() {
+            const currentTimeStr = document.getElementById('currentTime').value;
+            const duration = parseFloat(document.getElementById('duration').value) * 60; // Convert hours to minutes
+            const completedByValue = parseInt(document.getElementById('completedBy').value);
+            
+            // Parse current time
+            const [hours, minutes] = currentTimeStr.split(':').map(Number);
+            const currentTime = new Date();
+            currentTime.setHours(hours, minutes, 0, 0);
+            
+            // Calculate target completion time
+            const targetTime = new Date();
+            targetTime.setHours(completedByValue % 24, 0, 0, 0);
+            if (completedByValue >= 24) {
+                targetTime.setDate(targetTime.getDate() + 1);
+            }
+            
+            // Calculate required delay
+            const targetMinusTask = new Date(targetTime.getTime() - duration * 60000);
+            const delayMinutes = Math.floor((targetMinusTask - currentTime) / 60000);
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.style.color = 'white'; // Change result text to white for visibility
+
+            if (delayMinutes < 0) {
+                resultDiv.innerHTML = "It's not possible to complete the task by the selected time.";
+            } else {
+                const delayHours = Math.floor(delayMinutes / 60);
+                const remainingMinutes = delayMinutes % 60;
+                resultDiv.innerHTML = `You should wait ${delayHours} hours and ${remainingMinutes} minutes before starting the task.`;
+            }
+        }
+
+        function createBubbles() {
+            const bubbleCount = 15;
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                
+                // Random size between 20px and 100px
+                const size = Math.random() * 80 + 20;
+                bubble.style.width = `${size}px`;
+                bubble.style.height = `${size}px`;
+                
+                // Random position
+                bubble.style.left = `${Math.random() * 100}vw`;
+                bubble.style.top = `${Math.random() * 100}vh`;
+                
+                // Random animation duration and delay
+                const duration = Math.random() * 4 + 6;
+                const delay = Math.random() * 5;
+                bubble.style.animation = `float ${duration}s ease-in-out ${delay}s infinite`;
+                
+                document.body.appendChild(bubble);
+            }
+        }
+
+        // Modify the window.onload function
+        window.onload = async function() {
+            const now = new Date();
+            const timeString = now.getHours().toString().padStart(2, '0') + ':' + 
+                             now.getMinutes().toString().padStart(2, '0');
+            document.getElementById('currentTime').value = timeString;
+            
+            // Populate the "Completed By" dropdown
+            const completedBy = document.getElementById('completedBy');
+            const currentHour = now.getHours();
+            
+            for (let i = 0; i < 48; i++) { // 48 hours (today and tomorrow)
+                const hour = i % 24;
+                const day = i < 24 ? "Today" : "Tomorrow";
+                
+                // Skip times that have already passed today
+                if (day === "Today" && hour <= currentHour) {
+                    continue;
+                }
+                
+                const option = document.createElement('option');
+                option.value = i;
+                option.text = `${hour.toString().padStart(2, '0')}:00 (${day})`;
+                completedBy.appendChild(option);
+            }
+            loadSavedDurations();
+            createBubbles();
+            
+            // Wait for voices to be loaded
+            await initializeVoices();
+            
+            // Initialize speech recognition
+            initializeSpeechRecognition();
+        };
+    </script>
+</body>
+</html> 
